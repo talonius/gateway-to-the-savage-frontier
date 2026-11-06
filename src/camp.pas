@@ -1,10 +1,11 @@
 { The camp menus. CampMainMenu is the Camp command's hub (EclVm calls it): Save, View, Magic, Rest, Alter and Fix. Magic
   casts, memorizes and scribes spells, lists the party's spell effects and rests for the spells being prepared; Alter
   reorders the party, drops a member, sets the game speed, changes a character's icon and sets the difficulty level; Fix
-  rests the party and heals it with its clerics' cure spells. Memorizing and scribing mark a spell as pending by setting
-  C_Spell.PENDING_FLAG in its id, and Rest completes the pending spells as the party rests; each menu offers to keep or
-  discard the marks. NoncombatCastMenu is also Explore's Cast command, and DevMenu calls SortMemorizedSpells. Camp owns
-  no storage: its state is in GDConsts, GDVars and GBVM bank 0. }
+  rests the party and heals it with its clerics' cure spells, curing disease when a member knows Cure Disease.
+  Memorizing and scribing mark a spell as pending by setting C_Spell.PENDING_FLAG in its id, and Rest completes the
+  pending spells as the party rests; each menu offers to keep or discard the marks. NoncombatCastMenu is also Explore's
+  Cast command, and DevMenu calls SortMemorizedSpells. Camp owns no storage: its state is in GDConsts, GDVars and GBVM
+  bank 0. }
 {$O+,F+,S+}
 {$A+}
 unit Camp;
@@ -29,8 +30,8 @@ procedure SortMemorizedSpells;
 
 implementation
 
-uses Crt, GDConsts, GDVars, C_Keys, C_Ifc, C_Menu, C_Msg, C_Npc, C_Spell, GameTime, Magic, CharGen,
-  ViewChar, MenuCore, TextRend, CharHlp, Border, FxEngine, GameIo, SaveLoad, Portrait, Types, C_Status, C_Gbvm;
+uses Crt, GDConsts, GDVars, C_Keys, C_Effect, C_Ifc, C_Menu, C_Msg, C_Npc, C_Spell, GameTime, Magic,
+  CharGen, ViewChar, MenuCore, TextRend, CharHlp, Border, FxEngine, GameIo, SaveLoad, Portrait, Types, C_Status, C_Gbvm;
 
 const
   { GBVM zone 0: set when the module's mission is complete }
@@ -39,6 +40,12 @@ const
   ACT_CAST = 1;
   ACT_MEMORIZE = 2;
   ACT_SCRIBE = 3;
+
+  { the spell id of Cure Disease }
+  SPELL_CURE_DISEASE = 39;
+
+  { as Display names it; also in GDConsts.diseaseEffects }
+  EFF_HOT_FIRE_SHIELD = 50;
 
   { GDConsts.difficultyMenu's levels, in its order }
   DIFFICULTY_NOVICE = 0;
@@ -861,12 +868,12 @@ end;
 { Fix: rest and heal, at most four times, until the party has no lost hit points and no pending spells, or a rest is
   interrupted; with nothing to fix it says so and returns. A rest lasts as long as ComputeFixTime sets: the longest time
   a conscious member needs to memorize its cure spells again (4 or 6 hours, and 15, 60 or 75 minutes a slot), scaled
-  down when the party's lost hit points are fewer than timeMin, plus the pending spells' time; with no cure slots and
-  nothing pending, a day. After it the party heals by a roll of each memorized cure spell and of each cure spell slot,
-  and the pending spells are completed. The rest clock is restored after each rest that is not interrupted. Note:
-  ComputeFixTime's timeMin is not initialized. Note: the Nothing-to-fix test calls PartySpellPrepTime only when no hit
-  points are lost (short-circuit evaluation), so with hit points lost the pending time is stale, or unset on the first
-  try.
+  down when the party's lost hit points are fewer than timeMin, plus the pending spells' and Cure Disease's time; with
+  no cure slots and nothing pending, a day. After it the party heals by a roll of each memorized cure spell and of each
+  cure spell slot, Cure Disease cures the party when a conscious member knows it, and the pending spells are completed.
+  The rest clock is restored after each rest that is not interrupted. Note: ComputeFixTime's timeMin is not initialized.
+  Note: the Nothing-to-fix test calls PartySpellPrepTime only when no hit points are lost (short-circuit evaluation), so
+  with hit points lost the pending time is stale, or unset on the first try.
   @param(interrupted Set when a rest is interrupted.) }
 procedure CampFixMenu(var interrupted: Boolean);
 var
@@ -926,11 +933,82 @@ var
     Inc(healPool, rolledHealing);
   end;
 
+  { If a conscious member knows Cure Disease, remove every member's disease effects. }
+  procedure CureStatuses;
+  var
+    ch: Types.PWork;
+    { Unused in this version; see the other implementations of this routine. }
+    cureMinutes: Word;
+    { Unused in this version; see the other implementations of this routine. }
+    hours: Word;
+    { Unused in this version; see the other implementations of this routine. }
+    removed: Byte;
+    found: Boolean;
+    { Unused in this version; see the other implementations of this routine. }
+    afflicted: Word;
+  begin
+    ch := GDVars.creatureList;
+    found := False;
+    while (ch <> nil) and (not found) do begin
+      if CanCast(ch) and (ch^.known[Camp.SPELL_CURE_DISEASE] <> 0) then found := True;
+      ch := ch^.next;
+    end;
+    if not found then Exit;
+    ch := GDVars.creatureList;
+    while ch <> nil do begin
+      GDVars.targetCreaturePtr[1] := ch;
+      removed := Byte(Magic.RemoveDiseaseEffects);
+      ch := ch^.next;
+    end;
+    GDVars.effectLockFlag := 0;
+  end;
+
+  { Return whether a character has the diseased, strength-disease or hot-fire-shield effect. }
+  function NeedsCureDisease(ch: Types.PWork): Boolean;
+  var
+    eff: Types.PEffectRec;
+  begin
+    NeedsCureDisease := False;
+    if CharHlp.HasEffect(ch, C_Effect.DISEASED, eff) then NeedsCureDisease := True;
+    if CharHlp.HasEffect(ch, C_Effect.DISEASE_STRENGTH, eff) then NeedsCureDisease := True;
+    if CharHlp.HasEffect(ch, Camp.EFF_HOT_FIRE_SHIELD, eff) then NeedsCureDisease := True;
+  end;
+
+  { Return Cure Disease's minutes: 45 a sick member, shared among the conscious members who know it. }
+  function CureDiseaseTime: Word;
+  var
+    ch: Types.PWork;
+    curers: Byte;
+    afflicted: Word;
+  begin
+    CureDiseaseTime := 0;
+    ch := GDVars.creatureList;
+    curers := 0;
+    while ch <> nil do begin
+      if CanCast(ch) and (ch^.known[Camp.SPELL_CURE_DISEASE] <> 0) then Inc(curers);
+      ch := ch^.next;
+    end;
+    if curers = 0 then Exit;
+    ch := GDVars.creatureList;
+    afflicted := 0;
+    while ch <> nil do begin
+      if NeedsCureDisease(ch) then Inc(afflicted);
+      ch := ch^.next;
+    end;
+    if afflicted = 0 then Exit;
+    if curers >= afflicted then CureDiseaseTime := 45
+    else CureDiseaseTime := ((afflicted - 1) div curers + 1) * 45;
+  end;
+
   { Return the hit points the living party has lost. }
   function PartyHitPointsMissing: Word;
   var
     totalDamage: Word;
     character: Types.PWork;
+    { Unused in this version; see the other implementations of this routine. }
+    maxHitPoints: Word;
+    { Unused in this version; see the other implementations of this routine. }
+    hitPoints: Word;
   begin
     totalDamage := 0;
     character := GDVars.creatureList;
@@ -1032,6 +1110,7 @@ var
       maxTime := LongInt(maxTime) * PartyHitPointsMissing div timeMin;
     end;
     Inc(maxTime, prepTime);
+    Inc(maxTime, CureDiseaseTime);
     GDVars.restTime[3] := maxTime div 60;
     GDVars.restTime[2] := (maxTime - 60 * GDVars.restTime[3]) div 10;
     GDVars.restTime[1] := maxTime mod 10;
@@ -1042,6 +1121,10 @@ var
   var
     character: Types.PWork;
     healingNeeded: Word;
+    { Unused in this version; see the other implementations of this routine. }
+    maxHitPoints: Word;
+    { Unused in this version; see the other implementations of this routine. }
+    hitPoints: Word;
   begin
     character := GDVars.creatureList;
     while character <> nil do begin
@@ -1065,7 +1148,7 @@ begin
   tries := 0;
   repeat
   healPool := 0;
-  if (PartyHitPointsMissing = 0) and (PartySpellPrepTime = 0) then begin
+  if (PartyHitPointsMissing = 0) and (PartySpellPrepTime = 0) and (CureDiseaseTime = 0) then begin
     CharHlp.PrintBottomLine('Nothing to fix');
     CharHlp.DisplayParty(GDVars.curChar);
     CharHlp.PrintPositionAndTime;
@@ -1075,9 +1158,12 @@ begin
   savedRestTime := GDVars.restTime;
   ComputeFixTime;
   GDConsts.isMemorizeActive := False;
+  GDConsts.isDiseaseQuiet := True;
   interrupted := GameTime.CampRest(False);
+  GDConsts.isDiseaseQuiet := False;
   GDConsts.isMemorizeActive := True;
   if interrupted = False then begin
+    CureStatuses;
     RollCureSlots;
     HealParty;
     CharHlp.DisplayParty(GDVars.curChar);

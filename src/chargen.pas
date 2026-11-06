@@ -10,8 +10,8 @@ unit CharGen;
 interface
 
 uses Types, C_Effect, C_Class, C_Ifc, C_Npc, C_Race, C_Spell, C_Stat, C_Video, Crt, GDConsts, GDVars, C_Keys, Blit,
-  Border, CharHlp, ClassCal, CbtMap, FxEngine, InputCfg, GameIo, MapTiles, MenuCore, Raster, SaveLoad, TextRend,
-  ViewChar, Mouse, C_Gbvm;
+  Border, CharHlp, ClassCal, CbtMap, FxEngine, GameInit, InputCfg, GameIo, MapTiles, MenuCore, Raster, SaveLoad,
+  TextRend, ViewChar, Mouse, C_Gbvm;
 
 type
   { an alignment as AddCharacterMenu's evil tests read it }
@@ -23,7 +23,8 @@ type
 { The party menu: draw the party roster and the commands the party's state allows (GDConsts.menuItems), and run them
   until Begin or a quit: Create, Modify, Drop, Icon, Train, Human (a new class), View, Add, Remove, Load, Save, Begin,
   input configuration and Exit. With more than 11 commands it hides input configuration, then Icon, then Save. Exit asks
-  again when the party is unsaved, and a No there saves instead of quitting. }
+  again when the party is unsaved, and a No there saves instead of quitting. A Remove that empties the party resets the
+  game state and runs the post-load procedure. }
 procedure MainMenu;
 
 { Unlinks the current character from the party roster and frees it. Its predecessor, or else the roster head, becomes
@@ -295,6 +296,14 @@ begin
               CharGen.RemoveCreature(False, True);
             end else
               CharGen.DropCharacterMenu;
+            if GDVars.creatureList = nil then begin
+              GameInit.ResetGameState;
+              GDVars.virtualDiskNumber := 2;
+              GDVars.eclScript := 1;
+              GDVars.finishNewEclProc;
+              GDVars.savedInterfaceState := C_Ifc.EXPLORING;
+              GDVars.interfaceState := C_Ifc.MAIN_MENU;
+            end;
           end;
         'L':
           if GDConsts.menuItems[9].enabled <> 0 then SaveLoad.LoadGame;

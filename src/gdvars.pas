@@ -1,5 +1,6 @@
 { Global variables: every variable in the data segment, grouped by the subsystem that owns them and kept in address
   order. A new section starts wherever the data needs a word boundary. }
+{$A-}
 unit GDVars;
 
 interface
@@ -140,15 +141,10 @@ var
   { the three wall sets GeoEdit loads }
   geoWallSets: array[1..3] of Byte;
 
-{ Map editor: the step and the wall type. }
+{ Map editor's step, the character viewer, effect aging and spell lists. }
 var
   { GeoEdit's step, 1 or -1 }
   geoStep: Integer;
-  { the wall type GeoEdit's W command writes to the faced dungeon wall }
-  newWallType: Byte;
-
-{ Character viewer, effect aging and spell lists. }
-var
   { ViewChar's saved character: the one DisplayChar shows }
   tempCr1: Types.PWork;
   { and the trade selection }
@@ -208,9 +204,9 @@ var
   { GAME.CFG as GameBoot reads it }
   cfgText: Text;
   { unused }
-  spareAfterCfgText: array[0..83] of Byte;
+  spareAfterCfgText: array[0..85] of Byte;
   { unused }
-  spareBeforeMemNeeded: array[0..127] of Byte;
+  spareBeforeMemNeeded: array[0..125] of Byte;
   { the heap bytes GameBoot requires }
   memNeeded: LongInt;
   { Config sets it from GAME.CFG, Intro tests it }
@@ -458,7 +454,7 @@ var
   { a handler per effect id: EffHndlr installs most of them and Magic seven (86, 88, 90, 126, 128, 131 and 132), and
     FxEngine calls effectHandlers[id], or entry 147 while its override flag is set. Note: GameInit has EffHndlr install
     its own entry 126 after Magic's, so Magic's EffAimedParalyzingGaze never runs. }
-  effectHandlers: array[1..159] of Types.TEffectHandler;
+  effectHandlers: array[1..161] of Types.TEffectHandler;
   { the wall-symbol slices GameInit allocates }
   wallGfx: Types.PWallGfx;
   { set by View3D for each wall set 1..3 whose 8x8 symbol set holds $D2 or more symbols; the fourth is unused }
@@ -862,7 +858,7 @@ var
   joystickCenterX: Integer;
   { the stick's center row }
   joystickCenterY: Integer;
-  { EclVm's FinishNewEcl, which DevMenu calls after setting eclScript }
+  { EclVm's FinishNewEcl, which CharGen, SaveLoad and DevMenu call after setting eclScript }
   finishNewEclProc: Types.TNoArgProc;
   { CharHlp's DisplayParty, which MenuCore calls }
   displayPartyProc: Types.TDisplayPartyProc;
@@ -940,6 +936,8 @@ var
   newEclFlag: Byte;
   { CbtActs sets it when a fleeing creature gets away in combat mode 1, which ends Combat's round loop }
   combatTransition: Byte;
+  { EclVm's EclExit; nothing calls it through the cell }
+  eclExitProc: Types.TNoArgProc;
 
 implementation
 

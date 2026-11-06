@@ -144,22 +144,31 @@ end;
 { Settles the combat: whether the party fled, was defeated or won, GDVars.nonAnimCount (the party members out of play or
   animated) and each creature's combat effects. A win shares the experience; then a surviving party loses the hostile
   creatures and gets its fled, dying and unconscious members back by the combat's rules, and a defeated one loses
-  everyone. After a flight it records RESULT_FLED in zone 1's combat result, takes the fled members back and, while zone
-  0's combat mode is 0, removes the others. A duel while GDVars.demoMode is set takes the last branch instead: the
-  experience is shared once for each party member left standing, and the dying fall unconscious. Note: a duel is never a
-  defeat, nor is a mirror duel while any creature is in play, unconscious, fled or dying: that scan walks the whole
-  list, monsters included, so any creature still in play satisfies it. Note: after a flight with the combat mode set,
-  the walk never steps past a member that did not flee, so it does not end. }
+  everyone. After a flight it records RESULT_FLED in zone 1's combat result while a hostile creature still stands, takes
+  the fled members back and, while zone 0's combat mode is 0, removes the others. A duel while GDVars.demoMode is set
+  takes the last branch instead: the experience is shared once for each party member left standing, and the dying fall
+  unconscious. Note: a duel is never a defeat, nor is a mirror duel while any creature is in play, unconscious, fled or
+  dying: that scan walks the whole list, monsters included, so any creature still in play satisfies it. Note: after a
+  flight with the combat mode set, the walk never steps past a member that did not flee, so it does not end. }
 procedure DetermineCombatResults;
 var
   p: Types.PWork;
   b: Boolean;
   clearIdx: Byte;
   anyDown: Boolean;
+  { a hostile creature still stands }
+  hostileOkay: Boolean;
 begin
   GDVars.nonAnimCount := 0;
   GDVars.partyDefeated := True;
   GDVars.partyFled := 0;
+  hostileOkay := False;
+  p := GDVars.creatureList;
+  while p <> nil do begin
+    if (p^.hostile = 1) and (p^.status = C_Status.OKAY) then
+      hostileOkay := True;
+    p := p^.nextCharAddr;
+  end;
   p := GDVars.creatureList;
   while (p <> nil) and (p^.combatAddr^.notPcNpc <> 1) do begin
     if p^.status = C_Status.RUNNING then
@@ -233,7 +242,8 @@ begin
           end;
           p := p^.nextCharAddr;
         end else begin
-          GDVars.gbvmZone1Ptr^[C_Gbvm.COMBAT_RESULT] := PostCbt.RESULT_FLED;
+          if hostileOkay then
+            GDVars.gbvmZone1Ptr^[C_Gbvm.COMBAT_RESULT] := PostCbt.RESULT_FLED;
           if p^.status = C_Status.RUNNING then begin
             p^.status := C_Status.OKAY;
             p^.enabled := 1;

@@ -243,8 +243,8 @@ procedure BiteAndHold(cr: Types.PWork; combat: Types.PCombatRec; secondary: Byte
   @param(removed Unused.) }
 procedure AttackDrainBlood(cr: Types.PWork; p: Pointer; removed: Boolean);
 
-{ The editor's instant win: print 'The Gods intervene!', kill every hostile, clear every combatant's guard and recenter
-  the view.
+{ The editor's instant win: while GDVars.superMode is nonzero, print 'The Gods intervene!', kill every hostile, clear
+  every combatant's guard and recenter the view.
   @returns(True.) }
 function VictoryCheat: Boolean;
 
@@ -2304,18 +2304,20 @@ var
   p: Types.PWork;
 begin
   VictoryCheat := True;
-  CharHlp.PrintBottomLine('The Gods intervene!');
-  p := GDVars.creatureList;
-  while p <> nil do begin
-    if p^.hostile = 1 then begin
-      p^.enabled := 0;
-      p^.status := C_Status.DEAD_STATUS;
-      GDVars.combatArenaLocation[CbtMap.CombatSlot(p)].size := 0;
+  if GDVars.superMode <> 0 then begin
+    CharHlp.PrintBottomLine('The Gods intervene!');
+    p := GDVars.creatureList;
+    while p <> nil do begin
+      if p^.hostile = 1 then begin
+        p^.enabled := 0;
+        p^.status := C_Status.DEAD_STATUS;
+        GDVars.combatArenaLocation[CbtMap.CombatSlot(p)].size := 0;
+      end;
+      done := CharHlp.ClearGuard(Types.PWork(p));
+      p := p^.nextCharAddr;
     end;
-    done := CharHlp.ClearGuard(Types.PWork(p));
-    p := p^.nextCharAddr;
+    CbtMap.ScrollView(GDVars.combatArenaPtr^.ox + 3, GDVars.combatArenaPtr^.oy + 3, 255, C_Dir.CENTER);
   end;
-  CbtMap.ScrollView(GDVars.combatArenaPtr^.ox + 3, GDVars.combatArenaPtr^.oy + 3, 255, C_Dir.CENTER);
 end;
 
 begin

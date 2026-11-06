@@ -86,6 +86,11 @@ procedure InitSpellFns;
   @returns(True when it can be cast.) }
 function ClassCanCastSpell(cr: Types.PWork; spell: Byte): Boolean;
 
+{ Removes the first target's diseases under the effect lock: Diseased, the Strength-draining disease (with its hit-point
+  and helpless effects) and effect 50 (with effect 57). Note: Camp's spell-effect list calls effect 50 Hot Fire Shield.
+  @returns(True when any of the three was present.) }
+function RemoveDiseaseEffects: Boolean;
+
 implementation
 
 const
@@ -1384,22 +1389,21 @@ begin
   Magic.ResolveSpell(GDVars.currentSpellBeing, 0, False, 0, 0, 'is blind');
 end;
 
-{ Removes the first target's diseases under the effect lock: Diseased, the Strength-draining disease (with its hit-point
-  and helpless effects) and effect 50 (with effect 57). Note: Camp's spell-effect list calls effect 50 Hot Fire Shield.
-  @returns(True when any of the three was present.) }
 function RemoveDiseaseEffects: Boolean;
 begin
   RemoveDiseaseEffects := False;
-  GDVars.effectLockFlag := 1;
   if FxEngine.RemoveEffectWithMessage(GDVars.targetCreaturePtr[1], C_Effect.DISEASED) then
     RemoveDiseaseEffects := True;
   if FxEngine.RemoveEffectWithMessage(GDVars.targetCreaturePtr[1], C_Effect.DISEASE_STRENGTH) then begin
     RemoveDiseaseEffects := True;
+    GDVars.effectLockFlag := 1;
     FxEngine.RemoveEffect(Pointer(GDVars.targetCreaturePtr[1]), C_Effect.DISEASE_HIT_POINTS, nil);
+    GDVars.effectLockFlag := 1;
     FxEngine.RemoveEffect(Pointer(GDVars.targetCreaturePtr[1]), C_Effect.HELPLESS, nil);
   end;
   if FxEngine.RemoveEffectWithMessage(GDVars.targetCreaturePtr[1], 50) then begin
     RemoveDiseaseEffects := True;
+    GDVars.effectLockFlag := 1;
     FxEngine.RemoveEffect(Pointer(GDVars.targetCreaturePtr[1]), 57, nil);
   end;
   GDVars.effectLockFlag := 0;
@@ -1594,13 +1598,17 @@ begin
   Magic.ResolveSpell(GDVars.currentSpellBeing, 0, False, 0, 0, 'is blinking');
 end;
 
-{ Casts Fireball: caster-level d6 fire damage (the item fireball rolls 3, 5 or 7 d6); outside 3D maps the targets are
-  every creature within 2 cells of the target cell. }
+{ Spells 47 and 64 (Fireball): the caster's level in d6 of magical fire (spell 64 rolls 1d3 times 2 plus 1 dice);
+  outdoors it catches everyone within 2 cells of the aim cell. Underwater nothing happens. }
 procedure SpellFireball;
 var
   cl: Byte;
   i: Byte;
 begin
+  if GDVars.gbvmZone0Ptr^[C_Gbvm.UNDERWATER] <> 0 then begin
+    CharHlp.PrintBottomLine('Nothing Happens.');
+    Exit;
+  end;
   GDVars.currentSpellAffectsFlag := 1;
   if GDVars.currentSpellBeing = 64 then
     cl := FxEngine.RollDice(1, 3) * 2 + 1

@@ -72,7 +72,8 @@ procedure AddCreatureToParty(id: Byte);
 
 { Presents the savgam<A..J>.dat load menu, then reads the GBVM memory zones and party members back from the chosen file:
   it reloads each saved party member (.sav) through LoadChar and AddCharToParty, deletes the stale files, rebuilds each
-  creature's combat icon, and restores the interface state. }
+  creature's combat icon, and restores the interface state. Last it copies bank 0's byte $1E4 into the post-load byte
+  and calls the post-load procedure. }
 procedure LoadGame;
 
 { Presents the 'A B C..J' savgam slot menu, checks the disk space for the party, then writes savgam<slot>.dat (the fixed
@@ -115,12 +116,15 @@ type
 
   { LoadGame's types }
   { GBVM bank 0 (GDVars.gbvmZone0Ptr) as LoadGame reads it as bytes, through slZone2: the low bytes of the GEO map's
-    number (C_Gbvm.GEO_MAP_ID) and of the game speed (SaveLoad.GAME_SPEED). }
+    number (C_Gbvm.GEO_MAP_ID), of the script that ran before the last NEWECL (C_Gbvm.PREV_SCRIPT) and of the game speed
+    (SaveLoad.GAME_SPEED). }
   PState = ^TState;
   TState = record
     mapIdLead: array[$000..$189] of Byte;
     mapId: Byte;
-    gameDelayLead: array[$18B..$1F7] of Byte;
+    prevScriptLead: array[$18B..$1E3] of Byte;
+    prevScript: Byte;
+    gameDelayLead: array[$1E5..$1F7] of Byte;
     gameDelay: Byte;
   end;
 
@@ -1169,6 +1173,8 @@ begin
   MenuCore.ClearBottomLine;
   GDVars.savedInterfaceState := GDVars.interfaceState;
   GDVars.interfaceState := C_Ifc.MAIN_MENU;
+  GDVars.eclScript := slZone2^.prevScript;
+  GDVars.finishNewEclProc;
 end;
 
 procedure SaveGame;

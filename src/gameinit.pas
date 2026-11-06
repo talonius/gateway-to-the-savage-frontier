@@ -2,9 +2,9 @@
   and joystick, allocates the four GBVM banks, the font, the 3D wall graphics and map and the picture buffers, fills the
   screen-row address tables for the display mode, clears the game state to its defaults, loads the font, the 8x8
   symbols, the combat icons and frames, the sky backdrops, ITEMS.1, the combat tile sets and the sound effects, and
-  installs the spell and effect handlers. ResetGameState, which FixMain calls for a new game, clears the banks and the
-  game state again without allocating or loading anything. Both leave the party at 7, 13; InitializeGame faces it north,
-  ResetGameState east. All the state is in GDConsts and GDVars. }
+  installs the spell and effect handlers. ResetGameState, which FixMain and CharGen call for a new game, clears the
+  banks and the game state again without allocating or loading anything. Both leave the party at 7, 13; InitializeGame
+  faces it north, ResetGameState east. All the state is in GDConsts and GDVars. }
 {$O+,F+,I-,S+}
 {$A+}
 unit GameInit;
@@ -22,7 +22,9 @@ procedure ResetGameState;
 implementation
 
 uses Types, C_Dir, C_Ifc, C_Pic, C_Video, Crt, GDConsts, GDVars, Blit, Raster, Mouse,
-  TextRend, MapTiles, DaxIo, MenuCore, Sym8x8, EffHndlr, Magic, GameIo, C_Gbvm;
+  TextRend, MapTiles, DaxIo, MenuCore, Sym8x8,
+  SaveLoad, Camp, GeoEdit, Explore,
+  EffHndlr, Magic, GameIo, C_Gbvm;
 
 const
   { the party's start cell }

@@ -7,7 +7,6 @@
   entry addresses, the encounter's pictures, the menus, COMPARE, GOSUB, the mirror duel, robbery and damage. gbClassMap
   is in GDConsts. }
 {$O+,F+,S+}
-{$A+}
 unit EclMenu;
 
 interface

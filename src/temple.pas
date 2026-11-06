@@ -108,9 +108,10 @@ begin
   if c = 'Y' then begin
     c := Temple.ConfirmCureCost('Cure Disease', 1000);
     if c = 'Y' then begin
-      GDVars.effectLockFlag := 1;
-      for i := 1 to 6 do
+      for i := 1 to 6 do begin
+        GDVars.effectLockFlag := 1;
         FxEngine.RemoveEffect(GDVars.curChar, GDConsts.cureDiseaseEffects[i], nil);
+      end;
       GDVars.effectLockFlag := 0;
     end;
   end;

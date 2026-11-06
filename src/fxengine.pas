@@ -556,6 +556,7 @@ begin
           FxEngine.TriggerEffect(cr, 72);
           FxEngine.TriggerEffect(cr, 56);
           FxEngine.TriggerEffect(cr, C_Effect.CHARM);
+          FxEngine.TriggerEffect(cr, 161);
         end;
     20: begin
           FxEngine.TriggerEffect(cr, 50);
@@ -831,7 +832,9 @@ begin
   RemoveEffectWithMessage := False;
   if CharHlp.HasEffect(cr, effId, eff) then begin
     CharHlp.PrintCreatureMessage(cr, 'is Cured', C_Msg.MESSAGE_ROW, True);
+    GDVars.effectLockFlag := 1;
     FxEngine.RemoveEffect(cr, effId, eff);
+    GDVars.effectLockFlag := 0;
     RemoveEffectWithMessage := True;
   end;
 end;

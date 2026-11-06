@@ -579,6 +579,8 @@ function CheckKeystroke(cr: Types.PWork): Boolean;
 var
   p: Types.PWork;
   ch: Char;
+  { Unused in this version; see the other implementations of this routine. }
+  ignored: Boolean;
 begin
   CheckKeystroke := False;
   if GameIo.InputPending then begin
@@ -607,6 +609,7 @@ begin
             cr^.combatAddr^.initiative := 20;
             CheckKeystroke := True;
           end;
+          ignored := CharHlp.ClearGuard(cr);
         end;
       { Alt-X }
       #45:

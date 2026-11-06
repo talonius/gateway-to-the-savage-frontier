@@ -223,6 +223,25 @@ begin
   end;
 end;
 
+{ The R command: every wall of type oldValue on the map becomes newValue.
+  @param(oldValue The wall type replaced.)
+  @param(newValue Its replacement.) }
+procedure ReplaceWall(oldValue, newValue: Byte);
+var
+  x: ShortInt;
+  y: ShortInt; field: Byte;
+begin
+  for x := 0 to 15 do
+    for y := 0 to 15 do begin
+      field := 0;
+      while field < 8 do begin
+        if View3D.GetWallType(x, y, field) = oldValue then
+          GeoEdit.SetWallField(x, y, field, newValue);
+        Inc(field, 2);
+      end;
+    end;
+end;
+
 procedure GeoEditor;
 var
   wall: Byte;
@@ -250,7 +269,8 @@ begin
       TextRend.DisplayString(1, 18, LightGreen, Black,
                              'wall=' +
                              GeoEdit.GeoByteStr(View3D.GetWallType(GDVars.partyPos.mapX, GDVars.partyPos.mapY,
-                                                                   GDVars.partyPos.facing)));
+                                                                   GDVars.partyPos.facing)) + ' nw=' +
+        GeoEdit.GeoByteStr(GDConsts.newWallType));
     TextRend.DisplayString(1, 19, LightGreen, Black,
                            'block=' +
                            GDConsts.barrierNames [View3D.GetBarrierType(GDVars.partyPos.mapX, GDVars.partyPos.mapY,
@@ -276,14 +296,20 @@ begin
       case c of
         'W': begin
           if GDVars.gbvmZone0Ptr^[C_Gbvm.IN_DUNGEON] <> 0 then begin
-            GDVars.newWallType := GDVars.newWallType and $0F;
+            GDConsts.newWallType := GDConsts.newWallType and $0F;
             wall := View3D.GetWallType(GDVars.partyPos.mapX, GDVars.partyPos.mapY, GDVars.partyPos.facing);
-            if GDVars.newWallType = wall then
-              GDVars.newWallType := (wall + GDVars.geoStep) and $0F;
+            if GDConsts.newWallType = wall then
+              GDConsts.newWallType := (wall + GDVars.geoStep) and $0F;
             GeoEdit.SetWallField(GDVars.partyPos.mapX, GDVars.partyPos.mapY, GDVars.partyPos.facing,
-                                 GDVars.newWallType);
+                                 GDConsts.newWallType);
           end else
             Inc(GDVars.map3d^.wallsNE[GDVars.partyPos.mapY, GDVars.partyPos.mapX], GDVars.geoStep);
+          MapView.DisplayMapView;
+        end;
+        'N': GDConsts.newWallType := (GDConsts.newWallType + GDVars.geoStep) and $0F;
+        'R': begin
+          GeoEdit.ReplaceWall(View3D.GetWallType(GDVars.partyPos.mapX, GDVars.partyPos.mapY, GDVars.partyPos.facing),
+                              GDConsts.newWallType);
           MapView.DisplayMapView;
         end;
         'S': begin
@@ -326,5 +352,5 @@ begin
 end;
 
 begin
-  GDVars.newWallType := 0;
+  GDConsts.newWallType := 0;
 end.

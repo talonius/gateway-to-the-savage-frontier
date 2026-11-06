@@ -1,5 +1,6 @@
 { Initialized data: every typed constant in the data segment, grouped by the subsystem that owns them and kept in
   address order. A new section starts wherever the data needs a word boundary. }
+{$A-}
 unit GDConsts;
 
 interface
@@ -135,7 +136,7 @@ const
   { the text row of the '>' cursor on each field }
   itemFieldY: array[0..14] of Byte = (17, 17, 17, 17, 17, 18, 19, 19, 20, 20, 21, 21, 22, 22, 22);
 
-{ Developer menu's item names and wealth editor, and the map editor's start. }
+{ Developer menu's item names and wealth editor, and the map editor's state, saved maps and options menu. }
 const
   { The short name DevMenu's item editor shows for each item type, the base-item index; unnamed types carry their own
     number. }
@@ -163,9 +164,8 @@ const
   wealthFieldY: array[0..11] of Byte = (17, 17, 18, 18, 19, 19, 20, 21, 22, 22, 20, 21);
   { GeoEdit: GeoEditor sets it on its first entry }
   isGeoEditorInitialized: Boolean = False;
-
-{ Map editor: saved maps and the options menu. }
-const
+  { the wall type GeoEdit's N command steps and its W and R commands place }
+  newWallType: Byte = 0;
   { the word a saved map starts with, before the map block }
   geoFileHeader: Word = $0400;
   { the file a map is saved to; the map number goes in its last two characters }
@@ -178,7 +178,7 @@ const
 { Map editor: the main menu. }
 const
   { GeoEdit's main menu }
-  geoEditorMenu: String[40] = 'Wall Spc Blk Loc Dir Clr Files Mov Ext';
+  geoEditorMenu: String[40] = 'Wll Nw Rp Spc Blk Loc Dir Clr Fil Mov Ex';
 
 { Map editor's barrier names and the camp menus. }
 const
@@ -1236,13 +1236,15 @@ const
     from it }
   isArenaClickOutside: Boolean = False;
 
-{ The sound driver vector and the font. }
+{ The sound driver vector, the font and quiet disease. }
 const
   { GameBoot reads the INT 66h vector here; GameInit loads the sound effects and Config picks its sound mode by whether
     it is nil. }
   int66Vector: Pointer = nil;
   { TextRend sets it once the game font is loaded; HeapErr reports an error in the game's interface only then. }
   isFontLoaded: Boolean = False;
+  { Camp sets it around Fix's rest; EffHndlr's disease handlers then neither weaken nor damage }
+  isDiseaseQuiet: Boolean = False;
 
 implementation
 

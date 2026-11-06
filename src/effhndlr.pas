@@ -261,17 +261,18 @@ procedure EffProtNormalMissiles(cr: Types.PWork; p: Pointer; removed: Boolean);
   @param(removed Unused.) }
 procedure EffSlowed(cr: Types.PWork; p: Pointer; removed: Boolean);
 
-{ Strength disease: unless effects are locked, renews itself for 60 more minutes and lowers the Strength by 1 ('is
-  weakened') while it is above 3; at 3 the creature becomes helpless.
+{ Strength disease: unless effects are locked, renew itself for 60 more and lower the strength by 1 ('is weakened')
+  while it is above 3; at 3 the creature becomes helpless. While GDConsts.isDiseaseQuiet is set the strength is left
+  alone.
   @param(cr The creature the effect is on.)
   @param(p The effect node.)
   @param(removed Unused.) }
 procedure EffDiseaseStrength(cr: Types.PWork; p: Pointer; removed: Boolean);
 
-{ Hit-point disease: unless the effect lock is on, it re-arms for 10 minutes and deals 1 damage, or at 1 hit point the
-  creature becomes helpless.
-  @param(cr The creature with the effect.)
-  @param(p The effect's node.)
+{ Hit-point disease: unless effects are locked, renew itself for 10 more and take 1 hit point while the creature has
+  more than 1; at 1 it becomes helpless. While GDConsts.isDiseaseQuiet is set no hit point is taken.
+  @param(cr The creature the effect is on.)
+  @param(p The effect node.)
   @param(removed Unused.) }
 procedure EffDiseaseHitPoints(cr: Types.PWork; p: Pointer; removed: Boolean);
 
@@ -851,6 +852,18 @@ procedure EffSurrender(cr: Types.PWork; p: Pointer; removed: Boolean);
   @param(removed True when the effect is being removed.) }
 procedure EffDiseaseTouch(cr: Types.PWork; p: Pointer; removed: Boolean);
 
+{ On removal, end the spiritual hammer effect.
+  @param(cr The creature the effect is on.)
+  @param(p Unused.)
+  @param(removed True when the effect is being removed.) }
+procedure EffEndSpiritualHammer(cr: Types.PWork; p: Pointer; removed: Boolean);
+
+{ Regenerate 1 hit point ('regenerates') while below the maximum.
+  @param(cr The creature the effect is on.)
+  @param(p Unused.)
+  @param(removed Unused.) }
+procedure EffRegenerateOne(cr: Types.PWork; p: Pointer; removed: Boolean);
+
 { Does nothing.
   @param(cr Unused.)
   @param(p Unused.)
@@ -1364,8 +1377,10 @@ var loc: Pointer;
 begin
   if EffHndlr.AddEffectIfNoLock(cr, C_Effect.DISEASE_STRENGTH, Types.PEffectRec(p)^.strength, 60) then begin
     if cr^.statCells[$11] > 3 then begin
-      CharHlp.PrintCreatureMessage(cr, 'is weakened', C_Msg.MESSAGE_ROW, True);
-      Dec(cr^.statCells[$11]);
+      if not GDConsts.isDiseaseQuiet then begin
+        CharHlp.PrintCreatureMessage(cr, 'is weakened', C_Msg.MESSAGE_ROW, True);
+        Dec(cr^.statCells[$11]);
+      end;
     end else
       if not CharHlp.HasEffect(cr, C_Effect.HELPLESS, Types.PEffectRec(loc)) then
         FxEngine.AddEffect(cr, C_Effect.HELPLESS, 0, 255, False);
@@ -1378,8 +1393,10 @@ begin
   if EffHndlr.AddEffectIfNoLock(cr, C_Effect.DISEASE_HIT_POINTS, Types.PEffectRec(p)^.strength, 10) then begin
     if cr^.hpCur > 1 then begin
       GDVars.elementMask := 0;
-      FxEngine.InflictNonWeaponDamage(cr, 1, 0, False);
-      if GDVars.interfaceState <> C_Ifc.IN_COMBAT then CharHlp.DisplayParty(GDVars.curChar);
+      if not GDConsts.isDiseaseQuiet then begin
+        FxEngine.InflictNonWeaponDamage(cr, 1, 0, False);
+        if GDVars.interfaceState <> C_Ifc.IN_COMBAT then CharHlp.DisplayParty(GDVars.curChar);
+      end;
     end else
       if not CharHlp.HasEffect(cr, C_Effect.HELPLESS, Types.PEffectRec(loc)) then
         FxEngine.AddEffect(cr, C_Effect.HELPLESS, 0, 255, False);
@@ -2293,6 +2310,19 @@ begin
   end;
 end;
 
+procedure EffEndSpiritualHammer(cr: Types.PWork; p: Pointer; removed: Boolean);
+begin
+  if removed then FxEngine.RemoveEffect(cr, C_Effect.SPIRITUAL_HAMMER, nil);
+end;
+
+procedure EffRegenerateOne(cr: Types.PWork; p: Pointer; removed: Boolean);
+begin
+  if cr^.hpCur < cr^.evMaxHp then begin
+    CharHlp.PrintCreatureMessage(cr, 'regenerates', 11, True);
+    Inc(cr^.hpCur);
+  end;
+end;
+
 procedure EffNone(cr: Types.PWork; p: Pointer; removed: Boolean);
 begin end;
 
@@ -2451,6 +2481,8 @@ begin
   GDVars.effectHandlers[157] := EffHndlr.EffFlameVsDragons;
   GDVars.effectHandlers[158] := EffHndlr.EffSurrender;
   GDVars.effectHandlers[159] := EffHndlr.EffDiseaseTouch;
+  GDVars.effectHandlers[160] := EffHndlr.EffEndSpiritualHammer;
+  GDVars.effectHandlers[161] := EffHndlr.EffRegenerateOne;
 end;
 
 begin

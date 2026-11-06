@@ -18,7 +18,7 @@ CODE    SEGMENT BYTE PUBLIC 'CODE'
         PUBLIC  CGAGLYPH, EGAGLYPH, TANDYGLYPH, VGAGLYPH
 
 ATTRTAB   EQU  3082h        ; each color's 2-bit CGA pixel value, a byte per color (GDConsts.attrTable)
-GLYPHBITS EQU  7854h        ; the glyph's 8 rows, bit 0 its rightmost pixel (GDVars.glyphBits)
+GLYPHBITS EQU  7852h        ; the glyph's 8 rows, bit 0 its rightmost pixel (GDVars.glyphBits)
 
 ARGCOL    EQU  0Ch          ; col, the character column
 ARGROW    EQU  0Ah          ; row, the character row

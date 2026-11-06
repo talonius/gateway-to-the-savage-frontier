@@ -24,15 +24,15 @@
 
         LOCALS
 
-SPANACTIVE    EQU 5DD2h   ; byte per view scanline: drawn since the last flush
-SPANSCREENOFS EQU 5E7Ah   ; word per row: the screen byte of the leftmost dirty cell
-SPANFIRSTOFS  EQU 5FCAh   ; word per row: picture offset of the first dirty byte, FFFFh when clean
-SPANLASTOFS   EQU 611Ah   ; word per row: picture offset of the last dirty byte
-EGAROWS       EQU 669Ah   ; EGA row table, word per screen scanline: its offset in A000h (GDVars.fbRowOfs)
-DACTAB        EQU 0A0FCh  ; DAC levels for entries 16..31, three bytes each, expanded from PALWORK (GDVars.dacTable)
-PALWORK       EQU 0A12Ch  ; the staged picture palette, a TPalette24 (GDVars.paletteWork)
-PALSHOWN      EQU 0A144h  ; the palette the DAC last received; Blit's unit init zeroes it (GDVars.paletteShown)
-PALFRAME      EQU 0A15Ch  ; the staged picture's currentFrame, 0 for none (GDVars.paletteFrame)
+SPANACTIVE    EQU 5DD0h   ; byte per view scanline: drawn since the last flush
+SPANSCREENOFS EQU 5E78h   ; word per row: the screen byte of the leftmost dirty cell
+SPANFIRSTOFS  EQU 5FC8h   ; word per row: picture offset of the first dirty byte, FFFFh when clean
+SPANLASTOFS   EQU 6118h   ; word per row: picture offset of the last dirty byte
+EGAROWS       EQU 6698h   ; EGA row table, word per screen scanline: its offset in A000h (GDVars.fbRowOfs)
+DACTAB        EQU 0A102h  ; DAC levels for entries 16..31, three bytes each, expanded from PALWORK (GDVars.dacTable)
+PALWORK       EQU 0A132h  ; the staged picture palette, a TPalette24 (GDVars.paletteWork)
+PALSHOWN      EQU 0A14Ah  ; the palette the DAC last received; Blit's unit init zeroes it (GDVars.paletteShown)
+PALFRAME      EQU 0A162h  ; the staged picture's currentFrame, 0 for none (GDVars.paletteFrame)
 
 VIEWTOP    EQU 8                ; the view starts eight scanlines down
 VIEWROWS   EQU 168              ; scanlines in the view, one span entry each

@@ -13,6 +13,11 @@ interface
   through NewEclDone. }
 procedure GameLoop;
 
+{ EXIT, opcode $00: ends the script. Redraws the view frame if the copy protection showed, restores the saved current
+  character, clears the monster flags and the graphics flag, stops the interpreter, empties the gosub stack and puts the
+  text cursor back at row 17, column 1. }
+procedure EclExit;
+
 { Finish a NEWECL: free the GOSUB stack, load script GDVars.eclScript and start it (EclMenu.EclInit), stop the running
   script and flag the change for NewEclDone. }
 procedure FinishNewEcl;
@@ -60,9 +65,6 @@ procedure EnterCamp; forward;
 
 procedure CallEclScript(vmAddr: Word); forward;
 
-{ EXIT, opcode $00: ends the script. Redraws the view frame if the copy protection showed, restores the saved current
-  character, clears the monster flags and the graphics flag, stops the interpreter, empties the gosub stack and puts the
-  text cursor back at row 17, column 1. }
 procedure EclExit;
 begin
   if GDVars.protectionShown <> 0 then Border.DrawViewFrame;
@@ -653,8 +655,8 @@ begin
   end;
   list := head;
   idx := 0;
-  EclMenu.EclVerticalMenu(q, q, LightMagenta, LightGreen, White, C_Msg.TEXT_LEFT, GDVars.curRow + 1, C_Msg.TEXT_RIGHT,
-                          C_Msg.TEXT_BOTTOM, list, False, redraw, idx, list);
+  EclMenu.EclVerticalMenu(q, q, LightMagenta, LightGreen, White, C_Msg.TEXT_LEFT, GDVars.curRow + 1,
+                          C_Msg.TEXT_RIGHT, C_Msg.TEXT_BOTTOM, list, False, redraw, idx, list);
   EclMenu.WriteGbvm(vmAddr, idx);
   MenuCore.FreeStringList(list);
   TextRend.ClearRect(C_Msg.TEXT_LEFT, C_Msg.MESSAGE_TOP, C_Msg.TEXT_RIGHT, C_Msg.TEXT_BOTTOM);
@@ -2136,4 +2138,5 @@ end;
 { The initialization hooks FinishNewEcl into GDVars. }
 begin
   GDVars.finishNewEclProc := EclVm.FinishNewEcl;
+  GDVars.eclExitProc := EclVm.EclExit;
 end.

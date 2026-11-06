@@ -39,11 +39,10 @@ function SanitizeString(src, del: string): string;
   @returns(The file name.) }
 function SanitizeFileName(name: string): Types.TStr80;
 
-{ Loads record fileId of the archive fileName + ext into a new buffer, first without asking for a missing archive. A
-  missing record is looked for next in the archive named with the virtual disk's number appended, asking for that
-  archive until it is found, unless the name already ends in a digit or starts with 'MON'; a record still missing is
-  looked for once more in fileName + ext, this time asking for a missing archive unless the insert-disk prompt is
-  suppressed.
+{ Loads record fileId of the archive fileName + ext into a new buffer. A missing record is looked for again in the
+  archive named with the virtual disk's number appended, unless the name already ends in a digit or starts with 'MON';
+  neither attempt asks for a missing archive. Then, unless the insert-disk prompt is suppressed, the disk is asked for
+  and both tried again.
   @param(fileName The archive's base name.)
   @param(ext Its extension.)
   @param(fileId The record.)
@@ -278,17 +277,24 @@ procedure LoadDax(fileName, ext: Types.TStr80; fileId: Byte; var sizeRead: Word;
 var
   diskText: String[1];
   savedSuppress: Byte;
+  { Unused in this version; see the other implementations of this routine. }
+  fullPath: String[82];
+  { Unused in this version; see the other implementations of this routine. }
+  attempts: Word;
 begin
  Str(LongInt(GDVars.virtualDiskNumber), diskText);
  sizeRead := 0; savedSuppress := GDVars.suppressingInsertDiskFlag;
- GDVars.suppressingInsertDiskFlag := 1;
- DaxIo.LoadDaxCore(fileName, ext, fileId, sizeRead, data);
- if (sizeRead = 0) and not (fileName[Length(fileName)] in ['0'..'9']) and (Copy(fileName, 1, 3) <> 'MON') then begin
-  GDVars.suppressingInsertDiskFlag := 0;
-  DaxIo.LoadDaxCore(fileName + diskText, ext, fileId, sizeRead, data)
- end;
- GDVars.suppressingInsertDiskFlag := savedSuppress;
- if sizeRead = 0 then DaxIo.LoadDaxCore(fileName, ext, fileId, sizeRead, data)
+ repeat
+  GDVars.suppressingInsertDiskFlag := 1;
+  DaxIo.LoadDaxCore(fileName, ext, fileId, sizeRead, data);
+  if (sizeRead = 0) and not (fileName[Length(fileName)] in ['0'..'9']) and (Copy(fileName, 1, 3) <> 'MON') then begin
+    GDVars.suppressingInsertDiskFlag := 1;
+    DaxIo.LoadDaxCore(fileName + diskText, ext, fileId, sizeRead, data)
+  end;
+  GDVars.suppressingInsertDiskFlag := savedSuppress;
+  if (sizeRead <> 0) or (GDVars.suppressingInsertDiskFlag <> 0) then Exit;
+  DaxIo.PromptBox(Yellow, GDConsts.insertDiskDrive[GDVars.virtualDiskNumber] + GDVars.disk3Dir[1] + ':');
+ until False
 end;
 
 procedure PushState(v: Byte);

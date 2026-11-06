@@ -32,12 +32,8 @@ uses
   GameTime,
   ViewChar,
   Ending,
-  SaveLoad,
-  CharGen,
-  Camp,
-  GeoEdit,
-  Explore,
   GameInit,
+  CharGen,
   CombatSt,
   Combat,
   PostCbt,
@@ -123,7 +119,7 @@ begin
 
   GDVars.menuTimeout := 3000;
   GDVars.menuDefaultKey := DEMO_KEY;
-  GDVars.menuResult := MenuCore.MenuHorizontal('Gateway v1.00 ', 'Play Demo', Crt.LightMagenta, Crt.LightGreen,
+  GDVars.menuResult := MenuCore.MenuHorizontal('Gateway v1.2 ', 'Play Demo', Crt.LightMagenta, Crt.LightGreen,
                                                Crt.White, False, False, GDVars.menuExt);
   GDVars.menuTimeout := 0;
   GDVars.menuDefaultKey := NONE;
@@ -165,7 +161,7 @@ begin
       TextRend.ClearScreen;
       GDVars.menuTimeout := 1000;
       GDVars.menuDefaultKey := DEMO_KEY;
-      GDVars.menuResult := MenuCore.MenuHorizontal('Gateway v1.00 ', 'Play Demo', Crt.LightMagenta, Crt.LightGreen,
+      GDVars.menuResult := MenuCore.MenuHorizontal('Gateway v1.2 ', 'Play Demo', Crt.LightMagenta, Crt.LightGreen,
                                                    Crt.White, False, False, GDVars.menuExt);
       GDVars.menuTimeout := 0;
       GDVars.menuDefaultKey := NONE;
