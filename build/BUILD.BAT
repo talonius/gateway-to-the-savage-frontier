@@ -1,7 +1,7 @@
 @echo off
 rem ===================================================================
 rem  Gateway to the Savage Frontier v1.2 -- THE WHOLE-IMAGE BUILD. Run from
-rem  e:\src by gametools/build.sh, which mounts:
+rem  e:\src by build.sh, which mounts:
 rem     C: games   D: the compiler   E: this tree   F: TASM   G: EXEPACK
 rem  TPC takes its default switches from e:\src\TPC.CFG, which is tracked;
 rem  units override them with {$...} directives.
